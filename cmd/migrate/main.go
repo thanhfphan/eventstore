@@ -1,0 +1,5 @@
+package migrate
+
+func main() {
+
+}
