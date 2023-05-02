@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/thanhfphan/eventstore/app"
 	"github.com/thanhfphan/eventstore/config"
 	"github.com/thanhfphan/eventstore/pkg/errors"
 	"github.com/thanhfphan/eventstore/pkg/logging"
@@ -15,23 +16,23 @@ import (
 func main() {
 	ctx, done := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	logger := logging.NewLogger(os.Getenv("LOG_LEVEL"), os.Getenv("ENVIRONMENT"))
-	ctx = logging.WithLogger(ctx, logger)
+	log := logging.NewLogger(os.Getenv("LOG_LEVEL"), os.Getenv("ENVIRONMENT"))
+	ctx = logging.WithLogger(ctx, log)
 
 	defer func() {
 		done()
 		if r := recover(); r != nil {
-			logger.Errorf("apllication went wrong. Panic err=%v", r)
+			log.Errorf("apllication went wrong. Panic err=%v", r)
 		}
 	}()
 
 	err := realMain(ctx)
 	done()
 	if err != nil {
-		logger.Errorf("realMain has failed with err=%v", err)
+		log.Errorf("realMain has failed with err=%v", err)
 		return
 	}
-	logger.Infof("APP shutdown successful")
+	log.Infof("APP shutdown successful")
 }
 
 func realMain(ctx context.Context) error {
@@ -41,6 +42,12 @@ func realMain(ctx context.Context) error {
 	if err != nil {
 		return errors.New("load config from environment failed with err=%v", err)
 	}
+
+	app, err := app.New(cfg)
+	if err != nil {
+		return errors.New("init server http handler failed with err=%v", err)
+	}
+
 	srv, err := server.New(cfg.HTTPPort)
 	if err != nil {
 		return err
@@ -48,5 +55,5 @@ func realMain(ctx context.Context) error {
 
 	log.Infof("HTTP Server running on PORT: %s", cfg.HTTPPort)
 
-	return srv.ServeHTTPHandler(ctx, nil)
+	return srv.ServeHTTPHandler(ctx, app.Routes(ctx))
 }
