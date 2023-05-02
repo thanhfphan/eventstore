@@ -26,10 +26,8 @@ func SetRequestID() gin.HandlerFunc {
 
 		ctx := withRequestID(c.Request.Context(), requestID)
 		c.Request = c.Request.WithContext(ctx)
-
-		c.Next()
-
 		c.Writer.Header().Set("X-Request-ID", requestID)
+		c.Next()
 	}
 }
 
