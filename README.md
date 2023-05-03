@@ -5,16 +5,21 @@ The implementation of event sourced system that uses PostgreSQL as an event stor
 ## How to start
 
 Start infras
-```make
-make up
+```bash
+./scripts/dev.sh up
 ```
 
 Run migration(need to manual create database first)
-```make
-make migrate
+```bash
+./scripts/dev.sh migrate
 ```
 
 Start service
-```make
-make start
+```bash
+./scripts/dev.sh start
+```
+
+Other commands
+```bash
+./scripts/dev.sh help
 ```
