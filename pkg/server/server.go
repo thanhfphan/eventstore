@@ -51,7 +51,8 @@ func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
 		return errors.New("failed to serve: %w", err)
 	}
 
-	return nil
+	err = <-errCh
+	return err
 }
 
 func (s *Server) ServeHTTPHandler(ctx context.Context, handler http.Handler) error {
