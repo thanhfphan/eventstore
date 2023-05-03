@@ -13,6 +13,16 @@ type Config struct {
 	Environment string `env:"ENVIRONMENT"`
 	ServiceName string `env:"SERVICE_NAME"`
 	HTTPPort    string `env:"HTTP_PORT,default=4012"`
+	DB          *DB
+}
+
+type DB struct {
+	Host          string `env:"DB_HOST"`
+	Name          string `env:"DB_NAME"`
+	User          string `env:"DB_USER"`
+	Password      string `env:"DB_PASSWORD" json:"-"` // zap ignore
+	Port          string `env:"DB_PORT"`
+	ConnectionURL string `env:"CONNECTION_URL" json:"-"` // zap ignore
 }
 
 func LoadFromEnv(ctx context.Context) (*Config, error) {
