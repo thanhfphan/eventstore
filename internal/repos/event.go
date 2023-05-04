@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/thanhfphan/eventstore/internal/models"
+	"github.com/thanhfphan/eventstore/internal/domain/event"
 )
 
 var (
@@ -12,8 +12,8 @@ var (
 )
 
 type EventRepo interface {
-	AppendEvent(ctx context.Context, e *models.EsEvent) (int64, error)
-	ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*models.EsEvent, error)
+	AppendEvent(ctx context.Context, e *event.Event) (int64, error)
+	ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*event.Event, error)
 }
 
 type eventRepo struct {
@@ -26,7 +26,7 @@ func NewEvent(db *sql.DB) EventRepo {
 	}
 }
 
-func (r *eventRepo) AppendEvent(ctx context.Context, e *models.EsEvent) (int64, error) {
+func (r *eventRepo) AppendEvent(ctx context.Context, e *event.Event) (int64, error) {
 	result, err := r.db.Exec(`
 		INSERT INTO es_event(transaction_id, aggregate_id, version, type, data)
 		VALUES(pg_current_xact_id(), ?, ?, ?, ?)`, e.AggregateID, e.Version, e.Type, e.Data)
@@ -37,7 +37,7 @@ func (r *eventRepo) AppendEvent(ctx context.Context, e *models.EsEvent) (int64, 
 	return result.LastInsertId()
 }
 
-func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*models.EsEvent, error) {
+func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*event.Event, error) {
 
 	rows, err := r.db.QueryContext(ctx, `
 			SELECT id, transaction_id::text, type, data
@@ -51,9 +51,9 @@ func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVers
 	}
 	defer rows.Close()
 
-	var records []*models.EsEvent
+	var records []*event.Event
 	for rows.Next() {
-		var evt *models.EsEvent
+		var evt *event.Event
 		if err := rows.Scan(&evt.ID, &evt.TransactionID, &evt.Type, &evt.Data); err != nil {
 			return nil, err
 		}
