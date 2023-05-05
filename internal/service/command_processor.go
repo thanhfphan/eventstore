@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/thanhfphan/eventstore/internal/domain/command"
+	"github.com/thanhfphan/eventstore/internal/repos"
 	svcCmd "github.com/thanhfphan/eventstore/internal/service/command"
 	"github.com/thanhfphan/eventstore/pkg/logging"
 )
@@ -21,18 +22,18 @@ type cmdProcessor struct {
 	cmdHandlers svcCmd.CommandHandlers
 }
 
-func NewCommandProcessor() CommandProcessor {
+func NewCommandProcessor(repos repos.Repos) CommandProcessor {
 	return &cmdProcessor{
-		aggStore:    NewAggregateStore(),
+		aggStore:    NewAggregateStore(repos),
 		cmdHandlers: svcCmd.NewCommandHandlers(),
 	}
 }
 
 func (c *cmdProcessor) Process(ctx context.Context, cmd command.Command) error {
 	log := logging.FromContext(ctx)
-	log.Infof("starting process command: %v", cmd)
+	log.Debugf("starting process command: %v", cmd)
 
-	aggregate := c.aggStore.Read(ctx, cmd.AggregateType(), cmd.AggregateID(), 0)
+	aggregate := c.aggStore.Read(ctx, cmd.AggregateType(), cmd.AggregateID())
 
 	err := c.cmdHandlers.Handle(ctx, aggregate, cmd)
 	if err != nil {

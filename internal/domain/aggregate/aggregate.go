@@ -5,8 +5,11 @@ import (
 
 	"github.com/thanhfphan/eventstore/internal/domain/command"
 	"github.com/thanhfphan/eventstore/internal/domain/event"
-	"github.com/thanhfphan/eventstore/pkg/errors"
 )
+
+type AggregateRoot interface {
+	Process(ctx context.Context, cmd command.Command) error
+}
 
 type Aggregate struct {
 	ID      string `json:"id"`
@@ -15,13 +18,4 @@ type Aggregate struct {
 
 	Changes     []*event.Event `json:"-"`
 	BaseVersion int            `json:"-"`
-}
-
-func (a *Aggregate) Process(ctx context.Context, cmd command.Command) error {
-	f := getInstance(cmd.AggregateType())
-	if f != nil {
-		return f.Process(ctx, a, cmd)
-	}
-
-	return errors.New("do not found func handle AggregateType=%v", cmd.AggregateType())
 }

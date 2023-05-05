@@ -43,8 +43,8 @@ func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVers
 			SELECT id, transaction_id::text, type, data
 			FROM es_event
 			WHERE aggregate_id = ?
-				AND version > ?
-				AND version <= ?
+				AND (version = -1 OR version > ?)
+				AND (version = -1 OR version <= ?)
 			ORDER BY version ASC`, aggregateID, fromVersion, toVersion)
 	if err != nil {
 		return nil, err
@@ -58,18 +58,6 @@ func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVers
 			return nil, err
 		}
 		records = append(records, evt)
-	}
-
-	// If the database is being written to ensure to check for Close
-	// errors that may be returned from the driver. The query may
-	// encounter an auto-commit error and be forced to rollback changes.
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-
-	// Rows.Err will report the last error encountered by Rows.Scan.
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 
 	return records, nil

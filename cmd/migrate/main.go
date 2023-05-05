@@ -63,22 +63,26 @@ func realMain(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer m.Close()
+
 	m.LockTimeout = *migrationTimeout
 	m.Log = newLogger()
 
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		return errors.New("get migrate version failed with err=%v", err)
+	}
+
+	if dirty {
+		// FIXME: not work with version 0 :D
+		m.Force(int(version) - 1)
+	}
+
 	if err := m.Up(); err != nil && !stdErr.Is(err, migrate.ErrNoChange) {
-		return fmt.Errorf("failed run migrate: %w", err)
+		return errors.New("failed run migrate: %v", err)
 	}
 
-	srcErr, dbErr := m.Close()
-	if srcErr != nil {
-		return fmt.Errorf("migrate source error: %w", srcErr)
-	}
-	if dbErr != nil {
-		return fmt.Errorf("migrate database error: %w", dbErr)
-	}
-
-	log.Infof("finished running migrations")
+	log.Infof("Migration done ...")
 
 	return nil
 }

@@ -8,11 +8,11 @@ import (
 	"github.com/thanhfphan/eventstore/pkg/errors"
 )
 
-var (
-	_ AggregateBase = (*OrderAggregate)(nil)
-)
+var _ AggregateRoot = (*OrderAggregate)(nil)
 
 type OrderAggregate struct {
+	Aggregate
+
 	Version       int        `json:"version"`
 	Status        string     `json:"status"`
 	CustomerID    int64      `json:"customer_id"`
@@ -23,11 +23,11 @@ type OrderAggregate struct {
 	CompletedDate *time.Time `json:"completed_date"`
 }
 
-func (a *OrderAggregate) Process(ctx context.Context, agg *Aggregate, c command.Command) error {
+func (a *OrderAggregate) Process(ctx context.Context, c command.Command) error {
 
 	switch cmd := c.(type) {
 	case *command.PlaceOrderCmd:
-		a.ProcessPlaceCmd(ctx, agg, cmd)
+		a.ProcessPlaceCmd(ctx, cmd)
 	default:
 		return errors.New("OrderAggregate cant handle command=%v", c)
 	}
@@ -35,6 +35,6 @@ func (a *OrderAggregate) Process(ctx context.Context, agg *Aggregate, c command.
 	return nil
 }
 
-func (a *OrderAggregate) ProcessPlaceCmd(ctx context.Context, agg *Aggregate, cmd *command.PlaceOrderCmd) {
+func (a *OrderAggregate) ProcessPlaceCmd(ctx context.Context, cmd *command.PlaceOrderCmd) {
 
 }

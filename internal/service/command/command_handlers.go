@@ -13,7 +13,7 @@ var (
 )
 
 type CommandHandlers interface {
-	Handle(ctx context.Context, agg *aggregate.Aggregate, action command.Command) error
+	Handle(ctx context.Context, agg aggregate.AggregateRoot, action command.Command) error
 }
 
 type cmdHandlers struct {
@@ -23,9 +23,9 @@ func NewCommandHandlers() CommandHandlers {
 	return &cmdHandlers{}
 }
 
-func (c *cmdHandlers) Handle(ctx context.Context, agg *aggregate.Aggregate, action command.Command) error {
+func (c *cmdHandlers) Handle(ctx context.Context, agg aggregate.AggregateRoot, action command.Command) error {
 	log := logging.FromContext(ctx)
-	log.Infof("cmdHandlers handle agg=%v, action=%v", agg, action)
+	log.Debugf("cmdHandlers handle agg=%v, action=%v", agg, action)
 
 	switch cmd := action.(type) {
 	case *command.PlaceOrderCmd:
