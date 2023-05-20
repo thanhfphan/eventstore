@@ -1,4 +1,4 @@
-package event
+package models
 
 import "github.com/thanhfphan/eventstore/pkg/dtype"
 

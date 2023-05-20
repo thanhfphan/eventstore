@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/thanhfphan/eventstore/internal/domain/event"
+	"github.com/thanhfphan/eventstore/internal/models"
 )
 
 var (
@@ -12,8 +12,8 @@ var (
 )
 
 type EventRepo interface {
-	AppendEvent(ctx context.Context, e *event.Event) (int64, error)
-	ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*event.Event, error)
+	AppendEvent(ctx context.Context, e *models.Event) (int64, error)
+	ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*models.Event, error)
 }
 
 type eventRepo struct {
@@ -26,7 +26,7 @@ func NewEvent(db *sql.DB) EventRepo {
 	}
 }
 
-func (r *eventRepo) AppendEvent(ctx context.Context, e *event.Event) (int64, error) {
+func (r *eventRepo) AppendEvent(ctx context.Context, e *models.Event) (int64, error) {
 	result, err := r.db.Exec(`
 		INSERT INTO es_event(transaction_id, aggregate_id, version, type, data)
 		VALUES(pg_current_xact_id(), ?, ?, ?, ?)`, e.AggregateID, e.Version, e.Type, e.Data)
@@ -36,28 +36,58 @@ func (r *eventRepo) AppendEvent(ctx context.Context, e *event.Event) (int64, err
 
 	return result.LastInsertId()
 }
-
-func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*event.Event, error) {
+func (r *eventRepo) ReadAllEvents(ctx context.Context, aggregateID string) ([]*models.Event, error) {
 
 	rows, err := r.db.QueryContext(ctx, `
 			SELECT id, transaction_id::text, type, data
 			FROM es_event
 			WHERE aggregate_id = ?
-				AND (version = -1 OR version > ?)
-				AND (version = -1 OR version <= ?)
+			ORDER BY version ASC`, aggregateID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []*models.Event
+	for rows.Next() {
+		var evt *models.Event
+		if err := rows.Scan(&evt.ID, &evt.TransactionID, &evt.Type, &evt.Data); err != nil {
+			return nil, err
+		}
+		records = append(records, evt)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
+
+func (r *eventRepo) ReadEvents(ctx context.Context, aggregateID string, fromVersion, toVersion int) ([]*models.Event, error) {
+
+	rows, err := r.db.QueryContext(ctx, `
+			SELECT id, transaction_id::text, type, data
+			FROM es_event
+			WHERE aggregate_id = ?
+				AND version > ?
+				AND version <= ?
 			ORDER BY version ASC`, aggregateID, fromVersion, toVersion)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var records []*event.Event
+	var records []*models.Event
 	for rows.Next() {
-		var evt *event.Event
+		var evt *models.Event
 		if err := rows.Scan(&evt.ID, &evt.TransactionID, &evt.Type, &evt.Data); err != nil {
 			return nil, err
 		}
 		records = append(records, evt)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return records, nil
