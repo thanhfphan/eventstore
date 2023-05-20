@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/thanhfphan/eventstore/internal/models"
+	"github.com/thanhfphan/eventstore/domain/models"
 )
 
 var (
