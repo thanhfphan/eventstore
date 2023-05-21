@@ -10,8 +10,8 @@ import (
 
 type AggregateRoot struct {
 	aggregateID   string
-	version       Version
-	globalVersion Version
+	version       int
+	globalVersion int
 	events        []Event
 }
 
@@ -33,7 +33,7 @@ func (ar *AggregateRoot) Root() *AggregateRoot {
 }
 
 // version is the version of aggregate not stored
-func (ar *AggregateRoot) Version() Version {
+func (ar *AggregateRoot) Version() int {
 	if len(ar.events) > 0 {
 		return ar.events[len(ar.events)-1].Version
 	}
@@ -42,8 +42,12 @@ func (ar *AggregateRoot) Version() Version {
 }
 
 // globalVersion is the version of aggregate has stored
-func (ar *AggregateRoot) GlobalVersion() Version {
+func (ar *AggregateRoot) GlobalVersion() int {
 	return ar.globalVersion
+}
+
+func (ar *AggregateRoot) Events() []Event {
+	return ar.events
 }
 
 // CloneEvents return new slice of events
@@ -91,25 +95,25 @@ func (ar *AggregateRoot) LoadFromHistory(agg Aggregate, events []Event) {
 	}
 }
 
+// update update version
+func (ar *AggregateRoot) Update() {
+	if len(ar.events) > 0 {
+		lastEvent := ar.events[len(ar.events)-1]
+		ar.version = lastEvent.Version
+		ar.globalVersion = lastEvent.GlobalVersion
+	}
+}
+
 // setInternal set common data to AggregateRoot
-func (ar *AggregateRoot) setInternal(id string, version, globalVersion Version) {
+func (ar *AggregateRoot) setInternal(id string, version, globalVersion int) {
 	ar.aggregateID = id
 	ar.version = version
 	ar.globalVersion = globalVersion
 	ar.events = []Event{}
 }
 
-func (ar *AggregateRoot) nextVersion() Version {
+func (ar *AggregateRoot) nextVersion() int {
 	return ar.version + 1
-}
-
-// update update version
-func (ar *AggregateRoot) update() {
-	if len(ar.events) > 0 {
-		lastEvent := ar.events[len(ar.events)-1]
-		ar.version = lastEvent.Version
-		ar.globalVersion = lastEvent.GlobalVersion
-	}
 }
 
 func (ar *AggregateRoot) path() string {

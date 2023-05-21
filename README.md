@@ -23,3 +23,27 @@ Other commands
 ```bash
 ./scripts/dev.sh help
 ```
+
+## Testing
+
+Place order
+
+```curl
+curl --location --request POST 'http://localhost:4012/place_order' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "customer_id": 123123,
+    "price": 10.2
+}'
+```
+
+Cancel order
+
+```curl
+curl --location --request POST 'http://localhost:4012/place_order' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "customer_id": 123123,
+    "price": 10.2
+}'
+```

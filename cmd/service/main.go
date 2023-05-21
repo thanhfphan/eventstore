@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"os/signal"
 	"syscall"
 
+	_ "github.com/lib/pq"
 	"github.com/thanhfphan/eventstore/app"
 	"github.com/thanhfphan/eventstore/config"
 	"github.com/thanhfphan/eventstore/pkg/errors"
@@ -43,7 +45,18 @@ func realMain(ctx context.Context) error {
 		return errors.New("load config from environment failed with err=%v", err)
 	}
 
-	app, err := app.New(cfg)
+	// FIXME: move to other places
+	db, err := sql.Open("postgres", cfg.DB.ConnectionURL)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	app, err := app.New(cfg, db)
 	if err != nil {
 		return errors.New("init server http handler failed with err=%v", err)
 	}

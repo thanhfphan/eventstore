@@ -2,11 +2,15 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/thanhfphan/eventstore/app/middleware"
 	"github.com/thanhfphan/eventstore/config"
+	"github.com/thanhfphan/eventstore/domain/repos"
+	"github.com/thanhfphan/eventstore/domain/service"
 )
 
 var (
@@ -18,12 +22,17 @@ type App interface {
 }
 
 type app struct {
-	cfg *config.Config
+	cfg      *config.Config
+	aggStore service.AggregateStore
 }
 
-func New(cfg *config.Config) (App, error) {
+func New(cfg *config.Config, db *sql.DB) (App, error) {
+	repos := repos.New(db)
+	aggStore := service.NewAggregateStore(repos)
+
 	return &app{
-		cfg: cfg,
+		cfg:      cfg,
+		aggStore: aggStore,
 	}, nil
 }
 
@@ -34,6 +43,8 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 	r.Use(middleware.SetLogger())
 
 	r.GET("/health", a.handleHealth())
+	r.POST("/place_order", a.handlePlaceOrder())
+	r.POST("/cancel_order", a.handleCancelOrder())
 
 	return r
 }

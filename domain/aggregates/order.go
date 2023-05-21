@@ -25,25 +25,26 @@ func (o *OrderAggregate) RegisterEvents(f ev.RegisterEventsFunc) error {
 }
 
 func (o *OrderAggregate) Transition(event ev.Event) {
+	// FIXME: cant cast for now
 	switch e := event.Data.(type) {
-	case events.OrderPlaced:
+	case *events.OrderPlaced:
 		o.OrderID = e.OrderID
 		o.CustomerID = e.CustomerID
 		o.Price = e.Price
 		o.PlacedDate = e.PlacedDate
 		o.Status = "placed"
-	case events.OrderAccepted:
+	case *events.OrderAccepted:
 		o.AcceptedDate = e.AcceptedDate
 		o.Status = "accepted"
-	case events.OrderCompleted:
+	case *events.OrderCompleted:
 		o.CompletedDate = e.CompletedDate
 		o.Status = "completed"
-	case events.OrderCancelled:
+	case *events.OrderCancelled:
 		o.CancelledDate = e.CancelledDate
 		o.Status = "cancelled"
 	}
 }
-func CreateOrderAggregate(customerID int64, price float64, date *time.Time) *OrderAggregate {
+func CreateOrderAggregate(customerID int64, price float64, date time.Time) *OrderAggregate {
 	agg := OrderAggregate{}
 	agg.ApplyChange(&agg, &events.OrderPlaced{
 		CustomerID: customerID,
@@ -54,23 +55,20 @@ func CreateOrderAggregate(customerID int64, price float64, date *time.Time) *Ord
 	return &agg
 }
 
-func (o *OrderAggregate) RecordAccepted(aggregateId string, date *time.Time) {
-	o.SetID(aggregateId)
+func (o *OrderAggregate) RecordAccepted(date *time.Time) {
 	o.ApplyChange(o, &events.OrderAccepted{
 		AcceptedDate: date,
 	})
 }
 
-func (o *OrderAggregate) RecordCompleted(aggregateId string, date *time.Time) {
-	o.SetID(aggregateId)
+func (o *OrderAggregate) RecordCompleted(date *time.Time) {
 	o.ApplyChange(o, &events.OrderCompleted{
 		CompletedDate: date,
 	})
 }
 
-func (o *OrderAggregate) RecordCancelled(aggregateId string, date *time.Time) {
-	o.SetID(aggregateId)
+func (o *OrderAggregate) RecordCancelled(date time.Time) {
 	o.ApplyChange(o, &events.OrderCancelled{
-		CancelledDate: date,
+		CancelledDate: &date,
 	})
 }

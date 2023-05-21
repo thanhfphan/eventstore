@@ -9,8 +9,8 @@ import (
 
 type Event struct {
 	AggregateID   string      `json:"aggregate_id"`
-	Version       Version     `json:"version"`
-	GlobalVersion Version     `json:"global_version"`
+	Version       int         `json:"version"`
+	GlobalVersion int         `json:"global_version"` // consider remove this one
 	AggregateType string      `json:"aggregate_type"`
 	Data          interface{} `json:"data"`
 	Metadata      dtype.JSON  `json:"metadata"`

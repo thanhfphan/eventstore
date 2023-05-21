@@ -6,7 +6,7 @@ var _ Repos = (*repos)(nil)
 
 type Repos interface {
 	Event() EventRepo
-	// Aggregate() AggregateRepo
+	Aggregate() AggregateRepo
 }
 
 type repos struct {
@@ -23,6 +23,6 @@ func (r *repos) Event() EventRepo {
 	return NewEvent(r.db)
 }
 
-// func (r *repos) Aggregate() AggregateRepo {
-// 	return NewAggregate(r.db)
-// }
+func (r *repos) Aggregate() AggregateRepo {
+	return NewAggregate(r.db)
+}
