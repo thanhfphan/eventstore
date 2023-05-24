@@ -2,8 +2,8 @@ package repos
 
 import (
 	"context"
-	"database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/thanhfphan/eventstore/pkg/logging"
 )
 
@@ -16,12 +16,12 @@ type AggregateRepo interface {
 }
 
 type aggregateRepo struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewAggregate(db *sql.DB) AggregateRepo {
+func NewAggregate(pool *pgxpool.Pool) AggregateRepo {
 	return &aggregateRepo{
-		db: db,
+		pool: pool,
 	}
 }
 
@@ -29,7 +29,7 @@ func (r *aggregateRepo) CreateIfNotExist(ctx context.Context, id, typ string) er
 	log := logging.FromContext(ctx)
 	log.Debugf("CreateIfNotExist id=%s, type=%s", id, typ)
 
-	result, err := r.db.ExecContext(ctx, `
+	result, err := r.pool.Exec(ctx, `
 		INSERT INTO es_aggregate(id, version, type)	
 		VALUES($1, 0, $2)
 		ON CONFLICT DO NOTHING
@@ -39,13 +39,7 @@ func (r *aggregateRepo) CreateIfNotExist(ctx context.Context, id, typ string) er
 		return err
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		log.Warnf("create if not exist failed with err=%v", err)
-		return err
-	}
-
-	_ = rows
+	log.Debugf("CreateIfNotExist got rowsAffected=%d", result.RowsAffected())
 
 	return nil
 }

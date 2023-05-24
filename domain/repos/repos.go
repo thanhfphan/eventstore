@@ -1,6 +1,8 @@
 package repos
 
-import "database/sql"
+import (
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 var _ Repos = (*repos)(nil)
 
@@ -10,19 +12,19 @@ type Repos interface {
 }
 
 type repos struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func New(db *sql.DB) Repos {
+func New(pool *pgxpool.Pool) Repos {
 	return &repos{
-		db: db,
+		pool: pool,
 	}
 }
 
 func (r *repos) Event() EventRepo {
-	return NewEvent(r.db)
+	return NewEvent(r.pool)
 }
 
 func (r *repos) Aggregate() AggregateRepo {
-	return NewAggregate(r.db)
+	return NewAggregate(r.pool)
 }

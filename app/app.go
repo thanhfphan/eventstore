@@ -2,10 +2,10 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/thanhfphan/eventstore/app/middleware"
 	"github.com/thanhfphan/eventstore/config"
@@ -26,8 +26,8 @@ type app struct {
 	aggStore service.AggregateStore
 }
 
-func New(cfg *config.Config, db *sql.DB) (App, error) {
-	repos := repos.New(db)
+func New(cfg *config.Config, dbPool *pgxpool.Pool) (App, error) {
+	repos := repos.New(dbPool)
 	aggStore := service.NewAggregateStore(repos)
 
 	return &app{

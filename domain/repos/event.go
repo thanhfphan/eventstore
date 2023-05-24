@@ -2,10 +2,11 @@ package repos
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/thanhfphan/eventstore/domain/models"
+	"github.com/thanhfphan/eventstore/pkg/errors"
 	"github.com/thanhfphan/eventstore/pkg/ev"
 	"github.com/thanhfphan/eventstore/pkg/logging"
 )
@@ -20,12 +21,12 @@ type EventRepo interface {
 }
 
 type eventRepo struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewEvent(db *sql.DB) EventRepo {
+func NewEvent(pool *pgxpool.Pool) EventRepo {
 	return &eventRepo{
-		db: db,
+		pool: pool,
 	}
 }
 
@@ -33,7 +34,7 @@ func (r *eventRepo) GetAfter(ctx context.Context, aggregateID string, fromVersio
 	log := logging.FromContext(ctx)
 	log.Debugf("Starting GetAfter aggregateID=%s, fromVersion=%d", aggregateID, fromVersion)
 
-	rows, err := r.db.QueryContext(ctx, `
+	rows, err := r.pool.Query(ctx, `
 			SELECT id, aggregate_id, type, version, data
 			FROM es_event
 			WHERE aggregate_id = $1
@@ -72,7 +73,7 @@ func (r *eventRepo) Append(ctx context.Context, e ev.Event) error {
 		return err
 	}
 
-	result, err := r.db.ExecContext(ctx, `
+	result, err := r.pool.Exec(ctx, `
 		INSERT INTO es_event(transaction_id, aggregate_id, version, type, data)
 		VALUES(pg_current_xact_id(), $1, $2, $3, $4)`,
 		e.AggregateID, e.Version, e.AggregateType, eData)
@@ -81,15 +82,9 @@ func (r *eventRepo) Append(ctx context.Context, e ev.Event) error {
 		return err
 	}
 
-	_ = result
-	// id, err := result.LastInsertId() // not supported by current driver, lol
-	// if err != nil {
-	// 	log.Warnf("get last event id failed with err=%v", err)
-	// 	return err
-	// }
-	// if id == 0 {
-	// 	return errors.New("append event return id = 0")
-	// }
+	if !result.Insert() {
+		return errors.New("insert failed")
+	}
 
 	return nil
 }
