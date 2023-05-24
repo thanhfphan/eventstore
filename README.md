@@ -40,10 +40,9 @@ curl --location --request POST 'http://localhost:4012/place_order' \
 Cancel order
 
 ```curl
-curl --location --request POST 'http://localhost:4012/place_order' \
+curl --location 'http://localhost:4012/cancel_order' \
 --header 'Content-Type: application/json' \
---data-raw '{
-    "customer_id": 123123,
-    "price": 10.2
+--data '{
+    "order_id": "fe55e443-2426-437a-9656-f2daf01fa2f1"
 }'
 ```
