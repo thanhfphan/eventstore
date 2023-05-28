@@ -23,26 +23,21 @@ func (a *app) handlePlaceOrder() gin.HandlerFunc {
 		var req PlaceOrderRequest
 		err := ginCtx.Bind(&req)
 		if err != nil {
-			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
-			})
+			a.handleError(ginCtx, err)
 			return
 		}
 
 		log.Debugf("handle place order with request info=%v", req)
 
-		now := time.Now()
-		agg := aggregates.CreateOrderAggregate(req.CustomerID, req.Price, now)
+		agg := aggregates.CreateOrderAggregate(req.CustomerID, req.Price, time.Now())
 		err = a.aggStore.Save(ctx, agg)
 		if err != nil {
-			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
-			})
+			a.handleError(ginCtx, err)
 			return
 		}
 
 		ginCtx.JSON(http.StatusOK, gin.H{
-			"status": "ok",
+			"order_id": agg.Root().AggregateID(),
 		})
 		return
 	}

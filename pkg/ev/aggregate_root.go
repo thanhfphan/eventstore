@@ -12,6 +12,7 @@ type AggregateRoot struct {
 	aggregateID   string
 	aggregateType string
 	version       int
+	baseVersion   int
 	events        []Event
 }
 
@@ -40,13 +41,18 @@ func (ar *AggregateRoot) Root() *AggregateRoot {
 	return ar
 }
 
-// version is the version of aggregate not stored
+// Version is the version of aggregate not stored
 func (ar *AggregateRoot) Version() int {
 	if len(ar.events) > 0 {
 		return ar.events[len(ar.events)-1].Version
 	}
 
 	return ar.version
+}
+
+// BaseVersion is the version of current aggregate in database
+func (ar *AggregateRoot) BaseVersion() int {
+	return ar.baseVersion
 }
 
 func (ar *AggregateRoot) Events() []Event {
@@ -94,6 +100,7 @@ func (ar *AggregateRoot) LoadFromHistory(agg Aggregate, events []Event) {
 		agg.Transition(e)
 		ar.aggregateID = e.AggregateID
 		ar.version = e.Version
+		ar.baseVersion = e.Version
 	}
 }
 
@@ -102,6 +109,7 @@ func (ar *AggregateRoot) Update() {
 	if len(ar.events) > 0 {
 		lastEvent := ar.events[len(ar.events)-1]
 		ar.version = lastEvent.Version
+		ar.baseVersion = lastEvent.Version
 	}
 }
 
@@ -114,8 +122,4 @@ func (ar *AggregateRoot) setInternal(id string, version int) {
 
 func (ar *AggregateRoot) nextVersion() int {
 	return ar.version + 1
-}
-
-func (ar *AggregateRoot) path() string {
-	return reflect.TypeOf(ar).Elem().PkgPath()
 }

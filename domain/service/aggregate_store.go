@@ -37,7 +37,8 @@ func (as *aggregateStore) Get(ctx context.Context, aggregateID string, agg ev.Ag
 	aggType := reflect.TypeOf(agg).Elem().Name()
 	root := agg.Root()
 	root.SetAggregateType(aggType)
-	events, err := as.eventRepo.GetAfter(ctx, aggregateID, root)
+
+	events, err := as.eventRepo.Get(ctx, aggregateID, root)
 	if err != nil {
 		return err
 	}
@@ -56,16 +57,20 @@ func (as *aggregateStore) Get(ctx context.Context, aggregateID string, agg ev.Ag
 func (as *aggregateStore) Save(ctx context.Context, agg ev.Aggregate) error {
 	root := agg.Root()
 	aggType := reflect.TypeOf(agg).Elem().Name()
+	root.SetAggregateType(aggType)
 
 	err := as.aggregateRepo.CreateIfNotExist(ctx, root.AggregateID(), aggType)
 	if err != nil {
 		return err
 	}
 
-	// TODO: check version
+	if !as.aggregateRepo.CheckAndUpdateVersion(ctx, agg) {
+		return errors.New("Optimistic concurrency control failed id=%s, expectedVersion=%d, newversion=%d",
+			agg.Root().AggregateID(), agg.Root().BaseVersion(), agg.Root().Version())
+	}
+
 	events := root.Events()
 	for _, event := range events {
-		// TODO: use transaction??
 		err := as.eventRepo.Append(ctx, event)
 		if err != nil {
 			return err

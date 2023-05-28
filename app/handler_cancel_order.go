@@ -22,9 +22,7 @@ func (a *app) handleCancelOrder() gin.HandlerFunc {
 		var req CancelOrderRequest
 		err := ginCtx.Bind(&req)
 		if err != nil {
-			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err.Error(),
-			})
+			a.handleError(ginCtx, err)
 			return
 		}
 
@@ -33,21 +31,16 @@ func (a *app) handleCancelOrder() gin.HandlerFunc {
 		agg := aggregates.OrderAggregate{}
 		err = a.aggStore.Get(ctx, req.OrderID, &agg)
 		if err != nil {
-			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err.Error(),
-			})
+			a.handleError(ginCtx, err)
 			return
 		}
 
-		log.Debugf("AGGREGATE root: %v", agg.Root())
-		log.Debugf("AGGREGATE order: %v", agg.Order)
+		log.Debugf("AGGREGATE : %v", agg)
 
 		agg.RecordCancelled(time.Now())
 		err = a.aggStore.Save(ctx, &agg)
 		if err != nil {
-			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err.Error(),
-			})
+			a.handleError(ginCtx, err)
 			return
 		}
 

@@ -48,8 +48,15 @@ func (a *app) Routes(ctx context.Context) http.Handler {
 	r.Use(middleware.SetLogger())
 
 	r.GET("/health", a.handleHealth())
-	r.POST("/place_order", a.handlePlaceOrder())
-	r.POST("/cancel_order", a.handleCancelOrder())
+	r.POST("/order/place", a.handlePlaceOrder())
+	r.POST("/order/cancel", a.handleCancelOrder())
+	r.GET("/order/:id", a.handleGetOrder())
 
 	return r
+}
+
+func (a *app) handleError(ginCtx *gin.Context, err error) {
+	ginCtx.JSON(http.StatusBadRequest, gin.H{
+		"error": err.Error(),
+	})
 }

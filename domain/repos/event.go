@@ -14,7 +14,7 @@ var (
 )
 
 type EventRepo interface {
-	GetAfter(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error)
+	Get(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error)
 	Append(context.Context, ev.Event) error
 }
 
@@ -30,8 +30,7 @@ func NewEvent(pool *pgxpool.Pool, s ev.Serializer) EventRepo {
 	}
 }
 
-// GetAfter ...
-func (r *eventRepo) GetAfter(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error) {
+func (r *eventRepo) Get(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error) {
 	log := logging.FromContext(ctx)
 	log.Debugf("Starting GetAfter aggregateID=%s, fromVersion=%d", aggregateID, root.Version())
 
