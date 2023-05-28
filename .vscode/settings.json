@@ -1,8 +1,14 @@
 {
 	"cSpell.words": [
 		"dtype",
+		"jackc",
 		"jsonb",
+		"pgtype",
+		"pgxpool",
 		"repos",
 		"thanhfphan"
-	]
+	],
+	"editor.tokenColorCustomizations": {
+        "comments":"#2ea542"
+    }
 }

@@ -34,21 +34,20 @@ func (as *aggregateStore) Get(ctx context.Context, aggregateID string, agg ev.Ag
 		return errors.New("aggregate must to be a pointer")
 	}
 
+	aggType := reflect.TypeOf(agg).Elem().Name()
 	root := agg.Root()
-	events, err := as.eventRepo.GetAfter(ctx, aggregateID, root.Version())
+	root.SetAggregateType(aggType)
+	events, err := as.eventRepo.GetAfter(ctx, aggregateID, root)
 	if err != nil {
 		return err
 	}
 
-	for _, item := range events {
-		e := ev.Event{
-			Version:       item.Version,
-			Data:          item.Data,
-			AggregateID:   item.AggregateID,
-			AggregateType: item.Type,
-		}
+	if len(events) == 0 {
+		return errors.New("not found aggregate has id=%s", aggregateID)
+	}
 
-		root.LoadFromHistory(agg, []ev.Event{e})
+	for _, item := range events {
+		root.LoadFromHistory(agg, []ev.Event{item})
 	}
 
 	return nil
@@ -56,7 +55,6 @@ func (as *aggregateStore) Get(ctx context.Context, aggregateID string, agg ev.Ag
 
 func (as *aggregateStore) Save(ctx context.Context, agg ev.Aggregate) error {
 	root := agg.Root()
-
 	aggType := reflect.TypeOf(agg).Elem().Name()
 
 	err := as.aggregateRepo.CreateIfNotExist(ctx, root.AggregateID(), aggType)
@@ -65,15 +63,13 @@ func (as *aggregateStore) Save(ctx context.Context, agg ev.Aggregate) error {
 	}
 
 	// TODO: check version
-
 	events := root.Events()
 	for _, event := range events {
+		// TODO: use transaction??
 		err := as.eventRepo.Append(ctx, event)
 		if err != nil {
 			return err
 		}
-
-		// events[i].GlobalVersion = newEvent.ID
 	}
 
 	root.Update()

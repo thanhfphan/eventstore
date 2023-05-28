@@ -23,7 +23,7 @@ func (a *app) handleCancelOrder() gin.HandlerFunc {
 		err := ginCtx.Bind(&req)
 		if err != nil {
 			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}
@@ -34,7 +34,7 @@ func (a *app) handleCancelOrder() gin.HandlerFunc {
 		err = a.aggStore.Get(ctx, req.OrderID, &agg)
 		if err != nil {
 			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}
@@ -46,7 +46,7 @@ func (a *app) handleCancelOrder() gin.HandlerFunc {
 		err = a.aggStore.Save(ctx, &agg)
 		if err != nil {
 			ginCtx.JSON(http.StatusBadRequest, gin.H{
-				"err": err,
+				"err": err.Error(),
 			})
 			return
 		}

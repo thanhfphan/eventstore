@@ -1,10 +1,10 @@
 BEGIN;
 
 DROP TABLE
-	ES_AGGREGATE,
-	ES_EVENT,
-	ES_AGGREGATE_SNAPSHOT,
-	OMS_ORDER
+	es_aggregate,
+	es_event,
+	es_aggregate_snapshot,
+	oms_order
 ;
 
 END;

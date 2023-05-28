@@ -3,7 +3,6 @@ package aggregates
 import (
 	"time"
 
-	"github.com/thanhfphan/eventstore/domain/events"
 	"github.com/thanhfphan/eventstore/domain/models"
 	"github.com/thanhfphan/eventstore/pkg/ev"
 )
@@ -17,36 +16,36 @@ type OrderAggregate struct {
 
 func (o *OrderAggregate) RegisterEvents(f ev.RegisterEventsFunc) error {
 	return f(
-		events.OrderPlaced{},
-		events.OrderAccepted{},
-		events.OrderCompleted{},
-		events.OrderCancelled{},
+		&OrderPlaced{},
+		&OrderAccepted{},
+		&OrderCompleted{},
+		&OrderCancelled{},
 	)
 }
 
 func (o *OrderAggregate) Transition(event ev.Event) {
 	// FIXME: cant cast for now
 	switch e := event.Data.(type) {
-	case *events.OrderPlaced:
+	case *OrderPlaced:
 		o.OrderID = e.OrderID
 		o.CustomerID = e.CustomerID
 		o.Price = e.Price
 		o.PlacedDate = e.PlacedDate
 		o.Status = "placed"
-	case *events.OrderAccepted:
+	case *OrderAccepted:
 		o.AcceptedDate = e.AcceptedDate
 		o.Status = "accepted"
-	case *events.OrderCompleted:
+	case *OrderCompleted:
 		o.CompletedDate = e.CompletedDate
 		o.Status = "completed"
-	case *events.OrderCancelled:
+	case *OrderCancelled:
 		o.CancelledDate = e.CancelledDate
 		o.Status = "cancelled"
 	}
 }
 func CreateOrderAggregate(customerID int64, price float64, date time.Time) *OrderAggregate {
 	agg := OrderAggregate{}
-	agg.ApplyChange(&agg, &events.OrderPlaced{
+	agg.ApplyChange(&agg, &OrderPlaced{
 		CustomerID: customerID,
 		Price:      price,
 		PlacedDate: date,
@@ -56,19 +55,19 @@ func CreateOrderAggregate(customerID int64, price float64, date time.Time) *Orde
 }
 
 func (o *OrderAggregate) RecordAccepted(date *time.Time) {
-	o.ApplyChange(o, &events.OrderAccepted{
+	o.ApplyChange(o, &OrderAccepted{
 		AcceptedDate: date,
 	})
 }
 
 func (o *OrderAggregate) RecordCompleted(date *time.Time) {
-	o.ApplyChange(o, &events.OrderCompleted{
+	o.ApplyChange(o, &OrderCompleted{
 		CompletedDate: date,
 	})
 }
 
 func (o *OrderAggregate) RecordCancelled(date time.Time) {
-	o.ApplyChange(o, &events.OrderCancelled{
+	o.ApplyChange(o, &OrderCancelled{
 		CancelledDate: &date,
 	})
 }

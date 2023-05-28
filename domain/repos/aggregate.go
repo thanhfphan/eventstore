@@ -30,7 +30,7 @@ func (r *aggregateRepo) CreateIfNotExist(ctx context.Context, id, typ string) er
 	log.Debugf("CreateIfNotExist id=%s, type=%s", id, typ)
 
 	result, err := r.pool.Exec(ctx, `
-		INSERT INTO es_aggregate(id, version, type)	
+		INSERT INTO es_aggregate(id, version, aggregate_type)	
 		VALUES($1, 0, $2)
 		ON CONFLICT DO NOTHING
 	`, id, typ)

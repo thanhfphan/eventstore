@@ -10,8 +10,8 @@ import (
 
 type AggregateRoot struct {
 	aggregateID   string
+	aggregateType string
 	version       int
-	globalVersion int
 	events        []Event
 }
 
@@ -24,8 +24,16 @@ func (ar *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
+func (ar *AggregateRoot) SetAggregateType(typ string) {
+	ar.aggregateType = typ
+}
+
 func (ar *AggregateRoot) AggregateID() string {
 	return ar.aggregateID
+}
+
+func (ar *AggregateRoot) AggregateType() string {
+	return ar.aggregateType
 }
 
 func (ar *AggregateRoot) Root() *AggregateRoot {
@@ -39,11 +47,6 @@ func (ar *AggregateRoot) Version() int {
 	}
 
 	return ar.version
-}
-
-// globalVersion is the version of aggregate has stored
-func (ar *AggregateRoot) GlobalVersion() int {
-	return ar.globalVersion
 }
 
 func (ar *AggregateRoot) Events() []Event {
@@ -71,14 +74,14 @@ func (ar *AggregateRoot) ApplyChangeWithMetadata(agg Aggregate, data interface{}
 		ar.aggregateID = uuid.NewString()
 	}
 
-	name := reflect.TypeOf(agg).Elem().Name()
+	eventType := reflect.TypeOf(data).Elem().Name()
 	event := Event{
-		AggregateID:   ar.aggregateID,
-		Version:       ar.nextVersion(),
-		AggregateType: name,
-		CreatedAt:     time.Now().UTC(),
-		Data:          data,
-		Metadata:      metadata,
+		AggregateID: ar.aggregateID,
+		Version:     ar.nextVersion(),
+		EventType:   eventType,
+		CreatedAt:   time.Now().UTC(),
+		Data:        data,
+		Metadata:    metadata,
 	}
 
 	ar.events = append(ar.events, event)
@@ -91,7 +94,6 @@ func (ar *AggregateRoot) LoadFromHistory(agg Aggregate, events []Event) {
 		agg.Transition(e)
 		ar.aggregateID = e.AggregateID
 		ar.version = e.Version
-		ar.globalVersion = e.GlobalVersion
 	}
 }
 
@@ -100,15 +102,13 @@ func (ar *AggregateRoot) Update() {
 	if len(ar.events) > 0 {
 		lastEvent := ar.events[len(ar.events)-1]
 		ar.version = lastEvent.Version
-		ar.globalVersion = lastEvent.GlobalVersion
 	}
 }
 
 // setInternal set common data to AggregateRoot
-func (ar *AggregateRoot) setInternal(id string, version, globalVersion int) {
+func (ar *AggregateRoot) setInternal(id string, version int) {
 	ar.aggregateID = id
 	ar.version = version
-	ar.globalVersion = globalVersion
 	ar.events = []Event{}
 }
 

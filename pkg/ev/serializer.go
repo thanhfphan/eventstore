@@ -48,7 +48,7 @@ func (s *serializer) RegisterAggregate(agg BaseAggregate) error {
 	}
 
 	fu := func(events ...interface{}) error {
-		listF := s.ToEventsFunc(events)
+		listF := s.ToEventsFunc(events...)
 		for _, f := range listF {
 			event := f()
 			eName := reflect.TypeOf(event).Elem().Name()

@@ -9,8 +9,10 @@ import (
 
 	"github.com/thanhfphan/eventstore/app/middleware"
 	"github.com/thanhfphan/eventstore/config"
+	"github.com/thanhfphan/eventstore/domain/aggregates"
 	"github.com/thanhfphan/eventstore/domain/repos"
 	"github.com/thanhfphan/eventstore/domain/service"
+	"github.com/thanhfphan/eventstore/pkg/ev"
 )
 
 var (
@@ -27,7 +29,10 @@ type app struct {
 }
 
 func New(cfg *config.Config, dbPool *pgxpool.Pool) (App, error) {
-	repos := repos.New(dbPool)
+	s := ev.NewSerializer()
+	s.RegisterAggregate(&aggregates.OrderAggregate{})
+
+	repos := repos.New(dbPool, s)
 	aggStore := service.NewAggregateStore(repos)
 
 	return &app{

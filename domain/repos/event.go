@@ -2,10 +2,8 @@ package repos
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/thanhfphan/eventstore/domain/models"
 	"github.com/thanhfphan/eventstore/pkg/errors"
 	"github.com/thanhfphan/eventstore/pkg/ev"
 	"github.com/thanhfphan/eventstore/pkg/logging"
@@ -16,44 +14,62 @@ var (
 )
 
 type EventRepo interface {
-	GetAfter(ctx context.Context, aggregateID string, fromVersion int) ([]*models.Event, error)
+	GetAfter(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error)
 	Append(context.Context, ev.Event) error
 }
 
 type eventRepo struct {
-	pool *pgxpool.Pool
+	pool      *pgxpool.Pool
+	serialize ev.Serializer
 }
 
-func NewEvent(pool *pgxpool.Pool) EventRepo {
+func NewEvent(pool *pgxpool.Pool, s ev.Serializer) EventRepo {
 	return &eventRepo{
-		pool: pool,
+		pool:      pool,
+		serialize: s,
 	}
 }
 
-func (r *eventRepo) GetAfter(ctx context.Context, aggregateID string, fromVersion int) ([]*models.Event, error) {
+// GetAfter ...
+func (r *eventRepo) GetAfter(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error) {
 	log := logging.FromContext(ctx)
-	log.Debugf("Starting GetAfter aggregateID=%s, fromVersion=%d", aggregateID, fromVersion)
+	log.Debugf("Starting GetAfter aggregateID=%s, fromVersion=%d", aggregateID, root.Version())
 
 	rows, err := r.pool.Query(ctx, `
-			SELECT id, aggregate_id, type, version, data
+			SELECT id, aggregate_id, event_type, version, data
 			FROM es_event
 			WHERE aggregate_id = $1
 				AND version > $2
-			ORDER BY version ASC`, aggregateID, fromVersion)
+			ORDER BY version ASC`, aggregateID, root.Version())
 	if err != nil {
 		log.Warnf("query get after event failed with err=%v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var records []*models.Event
+	var records []ev.Event
 	for rows.Next() {
-		var evt models.Event
-		if err := rows.Scan(&evt.ID, &evt.AggregateID, &evt.Type, &evt.Version, &evt.Data); err != nil {
+		var evt ev.Event
+		var data string
+		if err := rows.Scan(&evt.ID, &evt.AggregateID, &evt.EventType, &evt.Version, &data); err != nil {
 			log.Warnf("scan event in getafter failed with err=%v", err)
 			return nil, err
 		}
-		records = append(records, &evt)
+
+		f, ok := r.serialize.Type(root.AggregateType(), evt.EventType)
+		if !ok {
+			log.Warnf("for some reason cant serialize event with type: %s_%s", root.AggregateType(), evt.EventType)
+			continue
+		}
+
+		eventData := f()
+		err := r.serialize.Unmarshal([]byte(data), &eventData)
+		if err != nil {
+			return nil, errors.New("unmarshal event failed with err=%v", err)
+		}
+
+		evt.Data = eventData
+		records = append(records, evt)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -68,15 +84,15 @@ func (r *eventRepo) Append(ctx context.Context, e ev.Event) error {
 	log := logging.FromContext(ctx)
 	log.Debugf("Starting append event=%v", e)
 
-	eData, err := json.Marshal(e.Data)
+	eData, err := r.serialize.Marshal(e.Data)
 	if err != nil {
 		return err
 	}
 
 	result, err := r.pool.Exec(ctx, `
-		INSERT INTO es_event(transaction_id, aggregate_id, version, type, data)
-		VALUES(pg_current_xact_id(), $1, $2, $3, $4)`,
-		e.AggregateID, e.Version, e.AggregateType, eData)
+		INSERT INTO es_event(transaction_id, aggregate_id, event_type, version, data, metadata)
+		VALUES(pg_current_xact_id(), $1, $2, $3, $4, $5)`,
+		e.AggregateID, e.EventType, e.Version, eData, e.Metadata)
 	if err != nil {
 		log.Warnf("append event failed with err=%v", err)
 		return err
