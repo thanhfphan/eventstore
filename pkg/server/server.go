@@ -35,6 +35,7 @@ func New(port string) (*Server, error) {
 	}, nil
 }
 
+// ServeHTTP will block util context cancelled or signal terminated
 func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
 	errCh := make(chan error, 1)
 	go func() {
@@ -55,6 +56,7 @@ func (s *Server) ServeHTTP(ctx context.Context, srv *http.Server) error {
 	return err
 }
 
+// ServeHTTPHandler will block util context cancelled or signal terminated
 func (s *Server) ServeHTTPHandler(ctx context.Context, handler http.Handler) error {
 	return s.ServeHTTP(ctx, &http.Server{
 		ReadHeaderTimeout: 10 * time.Second,

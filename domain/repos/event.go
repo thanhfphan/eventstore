@@ -14,7 +14,7 @@ var (
 )
 
 type EventRepo interface {
-	Get(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error)
+	Get(ctx context.Context, aggregateID string, fromVer, toVer int, root *ev.AggregateRoot) ([]ev.Event, error)
 	Append(context.Context, ev.Event) error
 }
 
@@ -30,16 +30,17 @@ func NewEvent(pool *pgxpool.Pool, s ev.Serializer) EventRepo {
 	}
 }
 
-func (r *eventRepo) Get(ctx context.Context, aggregateID string, root *ev.AggregateRoot) ([]ev.Event, error) {
+func (r *eventRepo) Get(ctx context.Context, aggregateID string, fromVer, toVer int, root *ev.AggregateRoot) ([]ev.Event, error) {
 	log := logging.FromContext(ctx)
-	log.Debugf("Starting GetAfter aggregateID=%s, fromVersion=%d", aggregateID, root.Version())
+	log.Debugf("Starting GetAfter aggregateID=%s, fromVersion=%d, toVersion=%d", aggregateID, fromVer, toVer)
 
 	rows, err := r.pool.Query(ctx, `
 			SELECT id, aggregate_id, event_type, version, data
 			FROM es_event
 			WHERE aggregate_id = $1
-				AND version > $2
-			ORDER BY version ASC`, aggregateID, root.Version())
+				AND ($2 = 0 OR version > $2)
+				AND ($3 = 0 OR version <= $3)
+			ORDER BY version ASC`, aggregateID, fromVer, toVer)
 	if err != nil {
 		log.Warnf("query get after event failed with err=%v", err)
 		return nil, err

@@ -54,6 +54,6 @@ curl --location --request POST 'http://localhost:4012/order/cancel' \
 Get order
 
 ```curl
-curl --location --request GET 'http://localhost:4012/order/2d8cfbdc-fc57-4136-90b4-ba3211ed9dfb' \
+curl --location --request GET 'http://localhost:4012/order/fe55e443-2426-437a-9656-f2daf01fa2f1' \
 --header 'Content-Type: application/json'
 ```

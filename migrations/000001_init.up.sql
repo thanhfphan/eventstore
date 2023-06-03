@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS es_aggregate_snapshot(
   "version"       INTEGER NOT NULL,
   "data"			    JSONB NOT NULL,
 
-  PRIMARY KEY (aggregate_id, VERSION)
+  PRIMARY KEY ("aggregate_id", "version")
 );
 
 CREATE TABLE IF NOT EXISTS oms_order(

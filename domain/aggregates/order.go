@@ -24,6 +24,7 @@ type OrderAggregate struct {
 
 func (o *OrderAggregate) RegisterEvents(f ev.RegisterEventsFunc) error {
 	return f(
+		&OrderAggregate{},
 		&OrderPlaced{},
 		&OrderAccepted{},
 		&OrderCompleted{},

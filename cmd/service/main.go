@@ -23,7 +23,7 @@ func main() {
 	defer func() {
 		done()
 		if r := recover(); r != nil {
-			log.Errorf("apllication went wrong. Panic err=%v", r)
+			log.Errorf("application went wrong. Panic err=%v", r)
 		}
 	}()
 

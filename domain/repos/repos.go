@@ -29,5 +29,5 @@ func (r *repos) Event() EventRepo {
 }
 
 func (r *repos) Aggregate() AggregateRepo {
-	return NewAggregate(r.pool)
+	return NewAggregate(r.pool, r.serialize)
 }

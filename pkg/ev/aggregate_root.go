@@ -11,9 +11,11 @@ import (
 type AggregateRoot struct {
 	aggregateID   string
 	aggregateType string
-	version       int
-	baseVersion   int
-	events        []Event
+	// version mean the version not stored yet
+	version int
+	// baseVersion mean version has been stored in DB
+	baseVersion int
+	events      []Event
 }
 
 func (ar *AggregateRoot) SetID(id string) error {
@@ -114,8 +116,9 @@ func (ar *AggregateRoot) Update() {
 }
 
 // setInternal set common data to AggregateRoot
-func (ar *AggregateRoot) setInternal(id string, version int) {
+func (ar *AggregateRoot) SetInternal(id string, baseVersion, version int) {
 	ar.aggregateID = id
+	ar.baseVersion = baseVersion
 	ar.version = version
 	ar.events = []Event{}
 }
